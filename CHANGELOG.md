@@ -14,6 +14,8 @@ The project is in pre-alpha. Version tags and GitHub releases will be created on
 - Initial heuristics for very light text, tiny text, off-page text, and AI-directed instruction patterns.
 - Synthetic PDF fixtures and automated API/detector tests.
 - SPDX Apache-2.0 identifiers in Python source and test files.
+- Bounded PDF page rendering and heuristic local text/background contrast comparison.
+- Synthetic tests for white-on-white text and ordinary black-on-white text.
 
 ### Changed
 - API package version advanced to 0.2.0.
@@ -21,6 +23,6 @@ The project is in pre-alpha. Version tags and GitHub releases will be created on
 
 ### Limitations
 - PDF parsing is synchronous inside the API process and is not production-hardened.
-- Light-text findings do not yet compare the text against rendered background pixels.
+- Local background color is estimated from a narrow pixel ring; complex backgrounds and transparency still require additional analysis.
 - OCR, rendered-page correlation, transparency inspection, and comprehensive PDF object forensics are not implemented.
 - DOCX analysis, isolated workers, persistent storage, authentication, and web UI remain planned.
