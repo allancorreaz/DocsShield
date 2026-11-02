@@ -1,5 +1,7 @@
 """FastAPI application for the DocsShield inspection service."""
 
+from typing import Annotated
+
 from fastapi import FastAPI, File, HTTPException, UploadFile, status
 
 from docshield_api.pdf_inspector import PDFInspectionError, inspect_pdf
@@ -20,7 +22,7 @@ async def health_check() -> dict[str, str]:
 
 
 @app.post("/v1/scans/pdf", tags=["scans"], status_code=status.HTTP_200_OK)
-async def scan_pdf(file: UploadFile = File(...)) -> dict:
+async def scan_pdf(file: Annotated[UploadFile, File()]) -> dict:
     """Inspect a PDF using the initial deterministic analyzer.
 
     This synchronous endpoint is for development only. Production deployments
