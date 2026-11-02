@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 """FastAPI application for the DocsShield inspection service."""
 
 from typing import Annotated
