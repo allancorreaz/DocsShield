@@ -32,6 +32,24 @@ def test_detects_light_text():
     assert any(f["detector_id"] == "pdf.visual.light_text" for f in report["findings"])
 
 
+def test_detects_white_text_on_white_page_by_rendered_contrast():
+    report = inspect_pdf(make_pdf({"text": "This text is white on a white page", "color": (1, 1, 1)}))
+    finding = next(
+        f for f in report["findings"]
+        if f["detector_id"] == "pdf.visual.low_contrast_text"
+    )
+    assert finding["evidence"]["estimated_contrast_ratio"] < 1.5
+    assert report["coverage"]["rendered_pixel_comparison"] is True
+
+
+def test_does_not_flag_black_text_on_white_page_as_low_contrast():
+    report = inspect_pdf(make_pdf({"text": "Ordinary black text"}))
+    assert not any(
+        f["detector_id"] == "pdf.visual.low_contrast_text"
+        for f in report["findings"]
+    )
+
+
 def test_detects_tiny_text():
     report = inspect_pdf(make_pdf({"text": "tiny content", "fontsize": 2}))
     assert any(f["detector_id"] == "pdf.geometry.tiny_text" for f in report["findings"])
