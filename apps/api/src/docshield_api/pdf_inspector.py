@@ -85,6 +85,7 @@ def _contrast_ratio(
 def _estimated_background(
     pixmap: fitz.Pixmap,
     bbox: list[float],
+    sample_bytes: bytes,
 ) -> tuple[float, float, float] | None:
     """Estimate local background from a narrow ring outside a text span."""
     if pixmap.n < 3:
@@ -121,7 +122,6 @@ def _estimated_background(
         return None
 
     samples: list[list[int]] = [[], [], []]
-    sample_bytes = pixmap.samples
     for x, y in points:
         offset = (y * width + x) * pixmap.n
         for channel in range(3):
@@ -171,9 +171,11 @@ def inspect_pdf(data: bytes) -> dict[str, Any]:
             page_number = page_index + 1
             rect = page.rect
             pixmap: fitz.Pixmap | None = None
+            pixmap_samples: bytes | None = None
             if rect.width > 0 and rect.height > 0 and rect.width * rect.height <= MAX_RENDER_PIXELS:
                 try:
                     pixmap = page.get_pixmap(matrix=fitz.Matrix(RENDER_SCALE, RENDER_SCALE), alpha=False)
+                    pixmap_samples = pixmap.samples
                     rendered_pages += 1
                 except Exception:
                     skipped_render_pages += 1
@@ -219,7 +221,7 @@ def inspect_pdf(data: bytes) -> dict[str, Any]:
                             evidence={"page_rect": [round(rect.x0, 2), round(rect.y0, 2), round(rect.x1, 2), round(rect.y1, 2)]}))
 
                     if pixmap is not None:
-                        background = _estimated_background(pixmap, bbox)
+                        background = _estimated_background(pixmap, bbox, pixmap_samples or b"")
                         if background is not None:
                             foreground = _rgb_from_pdf_color(color)
                             ratio = _contrast_ratio(foreground, background)
