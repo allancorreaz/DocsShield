@@ -9,7 +9,8 @@ DocsShield inspects untrusted documents before they are supplied to AI systems. 
 The API currently provides:
 - `GET /health`: process health check.
 - `POST /v1/scans/pdf`: bounded upload and initial deterministic PDF inspection.
-- PDF text-span extraction, font-size heuristics, light-text heuristics, page-boundary checks, and suspicious instruction pattern matching.
+- PDF text-span extraction and bounded page rendering.
+- Font-size, light-text, estimated local contrast, page-boundary, and suspicious instruction heuristics.
 - SHA-256 fingerprint and structured findings with page locations.
 - Unit and API tests for the initial detector set.
 
@@ -67,7 +68,8 @@ The PDF endpoint currently parses files inside the API process. It is a developm
 
 | Detector ID | Signal | Initial severity | Important limitation |
 |---|---|---|---|
-| `pdf.visual.light_text` | Very light text color | Low | Background pixels are not yet compared |
+| `pdf.visual.light_text` | Very light text color | Low | Color alone does not prove concealment |
+| `pdf.visual.low_contrast_text` | Text color compared with estimated local background pixels | High | Background is estimated from a narrow pixel ring; complex layouts require review |
 | `pdf.geometry.tiny_text` | Font size below 3 pt | Medium | Legitimate footnotes may trigger |
 | `pdf.geometry.off_page_text` | Span bounding box outside page | Medium | Some layouts intentionally bleed |
 | `prompt.override_instructions` | Heuristic instruction override phrase | High | Pattern matching is not semantic proof |

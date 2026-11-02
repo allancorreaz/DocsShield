@@ -52,14 +52,14 @@ Detection is layered. Individual signals are not automatically proof of maliciou
 
 | Detection family | Examples | Evidence |
 |---|---|---|
-| Visual concealment | White/light text, low contrast, transparency | Text color, opacity where available, geometry, rendered-page comparison |
+| Visual concealment | White/light text, low contrast, transparency | Text color, estimated local background, contrast ratio, geometry, rendered-page comparison |
 | Geometric concealment | Tiny text, off-page or clipped text | Font size, bounding box, page dimensions |
 | Hidden document content | Hidden runs, comments, revisions, hidden slides/sheets | Package part, XML properties, object location |
 | AI-directed language | Requests to ignore instructions, reveal secrets, or change the task | Exact extracted snippet, location, matched rule |
 | Extraction/render mismatch | Text extracted by a parser but not apparent in rendered output | Extracted text, rendered page, OCR comparison |
 | Embedded content | Attachments, images, objects, annotations | Object metadata, extraction status, content hash |
 
-The initial PDF milestone implements deterministic signals for text color, font size, page geometry, and suspicious instruction patterns. It does **not yet** verify actual text/background contrast, inspect all PDF objects, or perform OCR.
+The PDF analyzer now renders pages within a pixel budget and estimates local background color from a narrow pixel ring around each text span. It compares that estimate with the declared text color and reports very low estimated contrast. This is a heuristic: complex backgrounds, transparency, blend modes, clipping, and overlapping objects can still affect accuracy. Comprehensive PDF object inspection and OCR are not yet implemented.
 
 ## How it works
 
@@ -214,7 +214,8 @@ DocsShield/
 - [x] Initial PDF span extraction and deterministic heuristic rules.
 - [x] PDF upload endpoint with size and signature validation.
 - [x] Initial PDF detector tests.
-- [ ] PDF rendering and OCR correlation.
+- [x] Initial rendered-page local contrast heuristic.
+- [ ] OCR correlation.
 - [ ] PDF object, annotation, attachment, layer, and transparency analysis.
 - [ ] DOCX package/XML analyzer.
 - [ ] Unified finding schema and calibrated risk assessment.
@@ -231,8 +232,8 @@ The current API includes:
 
 - `GET /health`: API process health check.
 - `POST /v1/scans/pdf`: upload and inspect a PDF (20 MiB request limit).
-- PDF text-span extraction.
-- Heuristics for very light text, tiny text (below 3 pt), and text bounding boxes outside page boundaries.
+- PDF text-span extraction and page rendering within a configurable pixel budget.
+- Heuristics for very light text, low estimated text/background contrast, tiny text (below 3 pt), and text bounding boxes outside page boundaries.
 - Heuristic patterns for possible instruction override, role manipulation, data exfiltration, and task redirection.
 - SHA-256 fingerprint and structured findings with page coordinates.
 - Explicit coverage and limitation fields in the JSON report.
@@ -242,7 +243,8 @@ The current API includes:
 
 | Detector ID | Signal | Initial severity | Limitation |
 |---|---|---|---|
-| `pdf.visual.light_text` | Very light text color | Low | Background pixels are not compared |
+| `pdf.visual.light_text` | Very light text color | Low | Color alone does not prove concealment |
+| `pdf.visual.low_contrast_text` | Text color compared with estimated local background pixels | High | Background is estimated from a narrow pixel ring; complex layouts need review |
 | `pdf.geometry.tiny_text` | Font size below 3 pt | Medium | Legitimate footnotes may trigger |
 | `pdf.geometry.off_page_text` | Span bounding box outside page | Medium | Intentional bleed may trigger |
 | `prompt.override_instructions` | Instruction override phrase | High | Pattern match is not semantic proof |
