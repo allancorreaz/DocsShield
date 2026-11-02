@@ -177,7 +177,7 @@ def inspect_pdf(data: bytes) -> dict[str, Any]:
                     pixmap = page.get_pixmap(matrix=fitz.Matrix(RENDER_SCALE, RENDER_SCALE), alpha=False)
                     pixmap_samples = pixmap.samples
                     rendered_pages += 1
-                except Exception:
+                except (RuntimeError, ValueError):
                     skipped_render_pages += 1
             else:
                 skipped_render_pages += 1
