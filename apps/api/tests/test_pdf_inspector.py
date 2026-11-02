@@ -36,8 +36,11 @@ def test_detects_tiny_text():
     assert any(f["detector_id"] == "pdf.geometry.tiny_text" for f in report["findings"])
 
 
-def test_detects_off_page_text():
-    report = inspect_pdf(make_pdf({"text": "off page content", "point": (400, 60)}))
+def test_detects_text_partially_outside_page():
+    report = inspect_pdf(make_pdf({
+        "text": "This text continues beyond the right edge of the page boundary",
+        "point": (290, 60),
+    }))
     assert any(f["detector_id"] == "pdf.geometry.off_page_text" for f in report["findings"])
 
 
