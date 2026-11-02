@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 """Deterministic first-pass PDF inspection. Documents are always untrusted data."""
 
 from __future__ import annotations
