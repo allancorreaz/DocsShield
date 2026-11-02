@@ -1,10 +1,21 @@
-# Initial Architecture
+# DocsShield Architecture
 
 ## Goals
 
-DocsShield must inspect untrusted documents without treating document content as executable instructions. The same inspection engine should be reusable by hosted and local deployments.
+DocsShield inspects untrusted documents before they are supplied to AI systems. The same inspection engine should be reusable by hosted and local/private deployments.
 
-## Components
+## Current implementation
+
+The API currently provides:
+- `GET /health`: process health check.
+- `POST /v1/scans/pdf`: bounded upload and initial deterministic PDF inspection.
+- PDF text-span extraction, font-size heuristics, light-text heuristics, page-boundary checks, and suspicious instruction pattern matching.
+- SHA-256 fingerprint and structured findings with page locations.
+- Unit and API tests for the initial detector set.
+
+The PDF endpoint currently parses files inside the API process. It is a development baseline, not a hardened production service.
+
+## Target components
 
 ### Web application
 - Next.js and TypeScript.
@@ -14,7 +25,7 @@ DocsShield must inspect untrusted documents without treating document content as
 ### API
 - Python and FastAPI.
 - Authenticates callers, validates upload metadata, creates scan jobs, and exposes results.
-- Does not perform long-running parsing inside request handlers.
+- Current PDF endpoint is synchronous and intended only for development.
 
 ### Inspection workers
 - Celery workers backed by Redis.
@@ -30,34 +41,53 @@ DocsShield must inspect untrusted documents without treating document content as
 
 ## Inspection pipeline
 
-1. Receive and validate the file type using content inspection, not filename alone.
-2. Compute a cryptographic hash and preserve the original as immutable evidence.
-3. Inspect the container/package structure safely.
-4. Extract text, metadata, styles, coordinates, and embedded objects.
-5. Render pages in an isolated environment.
-6. Run OCR where applicable.
-7. Correlate extracted text with rendered visibility and geometry.
-8. Apply deterministic detectors and classify findings.
-9. Produce an evidence-based report with page/element location and detector details.
-10. Record coverage, skipped checks, and limitations.
+1. Receive and validate file type using content inspection, not filename alone.
+2. Enforce upload, page-count, and extraction limits.
+3. Compute a cryptographic hash.
+4. Inspect the package/format structure safely.
+5. Extract text, metadata, styles, coordinates, and embedded objects.
+6. Render pages in an isolated environment.
+7. Run OCR where applicable.
+8. Correlate extracted text with rendered visibility and geometry.
+9. Apply deterministic detectors and classify findings.
+10. Produce an evidence-based report with page/element location and detector details.
+11. Record coverage, skipped checks, and limitations.
 
 ## Trust boundaries
 
 - Uploaded files are untrusted.
 - Extracted text is untrusted data.
 - Text that resembles instructions must never alter scanner behavior.
-- Any future LLM-assisted classifier must receive document content as quoted/untrusted data and must not control tools or workflow decisions.
-- A successful scan is not proof that a document is safe.
+- Parsers must not have network access by default.
+- Production parsing must be isolated from the API and other tenants.
+- Any future LLM-assisted classifier must receive document content as untrusted data and must not control tools or workflow decisions.
+- A successful scan is not proof that a document is harmless.
 
-## Initial format scope
+## Initial PDF detector rules
 
-### PDF
-Inspect text spans, font size, color, opacity, bounding boxes, clipping, optional-content groups, annotations, form fields, attachments, metadata, and rendered appearance.
+| Detector ID | Signal | Initial severity | Important limitation |
+|---|---|---|---|
+| `pdf.visual.light_text` | Very light text color | Low | Background pixels are not yet compared |
+| `pdf.geometry.tiny_text` | Font size below 3 pt | Medium | Legitimate footnotes may trigger |
+| `pdf.geometry.off_page_text` | Span bounding box outside page | Medium | Some layouts intentionally bleed |
+| `prompt.override_instructions` | Heuristic instruction override phrase | High | Pattern matching is not semantic proof |
+| `prompt.role_manipulation` | Heuristic role/persona manipulation | High | False positives and false negatives possible |
+| `prompt.data_exfiltration` | Heuristic request to reveal secrets | High | Context determines intent |
+| `prompt.task_redirection` | AI-directed conditional instruction | High | Not every match is malicious |
 
-### DOCX
-Inspect the ZIP package safely, XML parts, runs and styles, hidden text properties, font color, comments, tracked changes, headers, footers, footnotes, endnotes, text boxes, and embedded objects.
+Severity is a review priority, not a probability or legal conclusion. Confidence is represented separately.
 
-## Non-goals for the first milestone
+## Initial DOCX inspection plan
+
+Inspect ZIP package safely and parse OOXML parts:
+- document body, headers, footers, footnotes, endnotes;
+- runs and styles, including hidden text properties and font color;
+- comments and tracked changes;
+- text boxes and drawing objects;
+- relationships and embedded files;
+- metadata and custom XML where relevant.
+
+## Non-goals for the first milestones
 
 - Claiming perfect detection.
 - Automatically sanitizing and replacing the original document.
