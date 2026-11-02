@@ -12,5 +12,5 @@ def test_health_endpoint_returns_ok() -> None:
     assert response.json() == {
         "status": "ok",
         "service": "docshield-api",
-        "version": "0.1.0",
+        "version": "0.2.0",
     }
