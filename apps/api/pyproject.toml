@@ -4,14 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "docshield-api"
-version = "0.1.0"
-description = "API foundation for DocsShield document security scanner"
+version = "0.2.0"
+description = "Document security inspection API"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
 authors = [{ name = "DocsShield contributors" }]
 dependencies = [
   "fastapi>=0.115,<1.0",
   "uvicorn[standard]>=0.30,<1.0",
+  "python-multipart>=0.0.9,<1.0",
+  "pymupdf>=1.24,<2.0",
 ]
 
 [project.optional-dependencies]
